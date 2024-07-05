@@ -1,11 +1,11 @@
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Element {
     Fire,
     Water,
     Snow,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 enum Color {
     Red,
     Blue,
@@ -15,14 +15,14 @@ enum Color {
     Purple,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 struct Card {
     element: Element,
     value: u8,
     color: Color,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Player {
     name: String,
     hand: Vec<Card>,
@@ -68,7 +68,7 @@ impl GameState {
         match GameState::determine_winner(&self.player1, &card1, &self.player2, &card2) {
             Some(player) => {
                 println!("{} wins the round!", player.name);
-                if &self.player1.name == &player.name {
+                if &self.player1 == player {
                     self.score.player1.push(card1.clone());
                 } else {
                     self.score.player2.push(card2.clone());
@@ -146,19 +146,35 @@ impl GameState {
 }
 
 fn main() {
-    let mut game = GameState::new("Player 1", "Player 2");
+    println!("Hello, world!");
+}
 
-    let card1 = Card {
-        element: Element::Fire,
-        value: 5,
-        color: Color::Red,
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let card2 = Card {
-        element: Element::Water,
-        value: 3,
-        color: Color::Blue,
-    };
+    #[test]
+    fn test_game_play_round() {
+        let mut game = GameState::new("Player 1", "Player 2");
 
-    game.play_round(card1, card2);
+        let card1 = Card {
+            element: Element::Fire,
+            value: 5,
+            color: Color::Red,
+        };
+
+        let card2 = Card {
+            element: Element::Water,
+            value: 3,
+            color: Color::Blue,
+        };
+
+        game.play_round(card1, card2);
+
+        // Assert that the player who won the round is as expected
+        assert_eq!(game.score.player1.len(), 0); // Assert the other player has no score yet
+        assert_eq!(game.score.player2.len(), 1); // Assert the score increments correctly
+        assert_eq!(game.check_end_condition(), None); // Assert game hasn't ended yet
+        assert_eq!(game.score.player2[0], card2); // Assert the exact cards played
+    }
 }
