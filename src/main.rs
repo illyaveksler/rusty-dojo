@@ -58,58 +58,53 @@ impl GameState {
             },
         }
     }
-}
 
-impl GameState {
     fn play_round(&mut self, card1: Card, card2: Card) {
         println!(
             "{} played {:?} and {} played {:?}",
             self.player1.name, card1, self.player2.name, card2
         );
 
-        match determine_winner(&self.player1, &card1, &self.player2, &card2) {
+        match GameState::determine_winner(&self.player1, &card1, &self.player2, &card2) {
             Some(player) => {
                 println!("{} wins the round!", player.name);
-                if self.player1.name == player.name {
-                    &self.score.player1.extend(vec![card1.clone()]);
+                if &self.player1.name == &player.name {
+                    self.score.player1.push(card1.clone());
                 } else {
-                    &self.score.player2.extend(vec![card2.clone()]);
+                    self.score.player2.push(card2.clone());
                 }
             }
             None => (),
         }
 
-        match self.check_end_condition() {
-            Some(player) => println!("{} wins the game!", player.name),
-            None => (),
+        if let Some(player) = self.check_end_condition() {
+            println!("{} wins the game!", player.name);
         }
     }
-}
 
-fn determine_winner(
-    player1: &Player,
-    card1: &Card,
-    player2: &Player,
-    card2: &Card,
-) -> Option<&Player> {
-    use Element::*;
+    fn determine_winner<'a>(
+        player1: &'a Player,
+        card1: &'a Card,
+        player2: &'a Player,
+        card2: &'a Card,
+    ) -> Option<&'a Player> {
+        use Element::*;
 
-    match (card1.element.clone(), card2.element.clone()) {
-        (Fire, Snow) | (Snow, Water) | (Water, Fire) => Some(player1),
-        (Snow, Fire) | (Water, Snow) | (Fire, Water) => Some(player2),
-        _ => {
-            if card1.value == card2.value {
-                None
-            } else if card1.value > card2.value {
-                Some(player1)
-            } else {
-                Some(player2)
+        match (card1.element.clone(), card2.element.clone()) {
+            (Fire, Snow) | (Snow, Water) | (Water, Fire) => Some(player1),
+            (Snow, Fire) | (Water, Snow) | (Fire, Water) => Some(player2),
+            _ => {
+                if card1.value == card2.value {
+                    None
+                } else if card1.value > card2.value {
+                    Some(player1)
+                } else {
+                    Some(player2)
+                }
             }
         }
     }
-}
 
-impl GameState {
     fn end_condition(cards: Vec<&Card>) -> bool {
         let mismatching_colors = cards[0].color != cards[1].color
             && cards[1].color != cards[2].color
@@ -129,7 +124,7 @@ impl GameState {
             .player1
             .iter()
             .combinations(3)
-            .any(|cards| Self::end_condition(cards));
+            .any(|cards| GameState::end_condition(cards));
 
         if player1_has_winning_combination {
             return Some(&self.player1);
@@ -140,7 +135,7 @@ impl GameState {
             .player2
             .iter()
             .combinations(3)
-            .any(|cards| Self::end_condition(cards));
+            .any(|cards| GameState::end_condition(cards));
 
         if player2_has_winning_combination {
             return Some(&self.player2);
@@ -151,5 +146,19 @@ impl GameState {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let mut game = GameState::new("Player 1", "Player 2");
+
+    let card1 = Card {
+        element: Element::Fire,
+        value: 5,
+        color: Color::Red,
+    };
+
+    let card2 = Card {
+        element: Element::Water,
+        value: 3,
+        color: Color::Blue,
+    };
+
+    game.play_round(card1, card2);
 }
