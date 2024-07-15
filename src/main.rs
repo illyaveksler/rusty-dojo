@@ -19,30 +19,43 @@ enum Color {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Power {
-    None,
-    ChangeScore(i8), // When this is scored, you card gets +2 or -2 for the next round. Scored means you have to win the point
     ChangeElement(Element, Element), // e.g., (Fire, Water) to change Fire cards to Water
     DiscardOpponentCardByElement(Element), // Discard a specific element card from the opponent
     DiscardOpponentCardByColor(Color), // Discard a specific color card from the opponent when SCORED
-    TriggerSideEffect(SideEffect), // Triggers a side effect
+    DiscardAllOpponentCardsByColor(Color),
+    RestrictElementNextRound(Element),
+    LowerValueWinsTieNextRound,
+    ChangeScore(i8),
+}
+
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum PowerTypes {
+    None,
+    TriggerInstantly(Power),
+    TriggerIfScored(Power),
+    // TriggerNextRound does not belong here. Rather we should use
+    // the SideEffect enum and apply it to the game state
+
+    // TriggerNextRound(Power),
 }
 
 // When played:
 
-// For this round:
+// For this round: (Power [x])
 // When this is played, Water cards become Fire for this round. (both players)
 // When this is played, Fire cards become Snowball for this round. (both players)
 // When this is played, Snowball cards become Water for this round. (both players)
 // When this is played, Snowball cards become Fire for this round (both players)
 // When this is played, Fire cards become Water for this round. (both players)
 
-// For next round:
+// For next round: (SideEffect [x])
 // When this card is played, lower values win ties the next round. (both players)
 
 
 // When scored:
 
-// Discard color:
+// Discard color: (Power [x])
 // When this is scored, discard one Opponent's Red card.
 // When this is scored, discard one Opponent's Yellow card.
 // When this is scored, discard one Opponent's Green card.
@@ -56,25 +69,24 @@ enum Power {
 // When this is scored, discard all of opponent's Purple cards.
 // When this is scored, discard all of Opponent's Blue cards.
 
-// Restrict element:
+// Restrict element: (SideEffect [x])
 // When this is scored, Snow cannot be played next round.
 // When this is scored, Water cannot be played next round.
 // When this is scored, Fire cannot be played next round.
 
-// Discard element:
+// Discard element: (Power [x])
 // When this is scored, discard one Opponent's Snowball card.
 // When this is scored, discard one Opponent's Water card.
 // When this is scored, discard one Opponent's Fire card.
 
-// Change value:
+// Change value: (SideEffect [x])
 // When this is scored, your card gets +2 for the next round
 // When this is scored, your Opponent's card get -2 for the next round
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum SideEffect {
     None,
-    RestrictElementNextRound(Element), // When this is scored, Fire cannot be played next round. Scored means you have to win the round
-    LowerValueWinsTieNextRound,
+    LowerValueWinsTieNextRound
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -82,7 +94,7 @@ struct Card {
     element: Element,
     value: u8,
     color: Color,
-    power: Power,
+    power: PowerTypes,
 }
 
 impl Card {
@@ -93,12 +105,24 @@ impl Card {
         }
     }
 
+    pub fn apply_instant_power(&self) {
+        if let PowerTypes::TriggerInstantly(ref power) = self.power {
+            match power {
+                Power::ChangeElement(from, to) => {
+                    // self.apply_power(player, opponent);
+                }
+                Power::DiscardOpponentCardByElement(_) => todo!(),
+                Power::DiscardOpponentCardByColor(_) => todo!(),
+                Power::DiscardAllOpponentCardsByColor(_) => todo!(),
+                Power::RestrictElementNextRound(_) => todo!(),
+                Power::LowerValueWinsTieNextRound => todo!(),
+                Power::ChangeScore(_) => todo!(),
+            }
+        }
+    }
+
     pub fn apply_power(&self, player: &mut Player, opponent: &mut Player) -> Option<SideEffect> {
         match self.power {
-            Power::ChangeScore(amount) => {
-                self.increase_score(player, amount);
-                None
-            }
             Power::ChangeElement(from, to) => {
                 self.transform_element(opponent, from, to);
                 None
@@ -111,8 +135,12 @@ impl Card {
                 self.discard_opponent_card_by_color(opponent, color);
                 None
             }
-            Power::TriggerSideEffect(side_effect) => Some(side_effect),
+            // Power::TriggerSideEffect(side_effect) => Some(side_effect),
             Power::None => None,
+            Power::DiscardAllOpponentCardsByColor(_) => todo!(),
+            Power::RestrictElementNextRound(_) => todo!(),
+            Power::LowerValueWinsTieNextRound => todo!(),
+            Power::ChangeScore(_) => todo!(),
         }
     }
 
@@ -174,7 +202,37 @@ struct GameState {
     player1: Player,
     player2: Player,
     side_effect: SideEffect,
+    // round: RoundState<'a>,
 }
+
+// #[derive(Debug)]
+// struct RoundState<'a> {
+//     effective_card1: Card,
+//     effective_card2: Card,
+//     player1: &'a Player,
+//     player2: &'a Player,
+//     game: &'a GameState<'a>,
+// }
+//
+// impl RoundState<'_> {
+//     fn new<'a>(card1: &Card, card2: &Card, player1: &Player, player2: &Player, game: &GameState) -> Self {
+//         RoundState {
+//             effective_card1: card1.clone(),
+//             effective_card2: card2.clone(),
+//             player1,
+//             player2,
+//             game,
+//         }
+//     }
+    
+//     fn apply_instant_card_powers(card: &Card) {
+//         todo!()
+//     }
+
+//     fn apply_if_scored_card_powers(card: &Card) {
+//         todo!()
+//     }
+// }
 
 impl GameState {
     fn new(player1_name: &str, player2_name: &str) -> Self {
